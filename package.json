@@ -1,0 +1,89 @@
+{
+  "name": "codex-status-line",
+  "displayName": "Codex Status Line",
+  "description": "Unofficial local status bar indicator for Codex activity.",
+  "version": "0.0.6",
+  "publisher": "local-dev",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "codex",
+    "status",
+    "statusbar",
+    "agent"
+  ],
+  "activationEvents": [
+    "*",
+    "onStartupFinished",
+    "onCommand:codexStatusLine.showDetails",
+    "onCommand:codexStatusLine.openSettings",
+    "onCommand:codexStatusLine.refresh",
+    "onCommand:codexStatusLine.printToTerminal",
+    "onCommand:codexStatusLine.bindActiveTerminal"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codexStatusLine.showDetails",
+        "title": "Codex Status Line: Show Details"
+      },
+      {
+        "command": "codexStatusLine.openSettings",
+        "title": "Codex Status Line: Open Settings"
+      },
+      {
+        "command": "codexStatusLine.refresh",
+        "title": "Codex Status Line: Refresh"
+      },
+      {
+        "command": "codexStatusLine.printToTerminal",
+        "title": "Codex Status Line: Print Status To Terminal"
+      },
+      {
+        "command": "codexStatusLine.bindActiveTerminal",
+        "title": "Codex Status Line: Bind Active Terminal To Session"
+      }
+    ],
+    "configuration": {
+      "title": "Codex Status Line",
+      "properties": {
+        "codexStatusLine.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the Codex status bar indicator."
+        },
+        "codexStatusLine.refreshIntervalMs": {
+          "type": "number",
+          "default": 2000,
+          "minimum": 500,
+          "description": "How often to refresh the local Codex status."
+        },
+        "codexStatusLine.statusFilePath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional local JSON file path used as the Codex status source."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "typecheck": "tsc -p ./ --noEmit",
+    "test": "npm run compile && node --test out/test/**/*.test.js",
+    "write-status": "node out/statusWriter.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.8",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.0.0",
+    "typescript": "^5.5.2"
+  }
+}

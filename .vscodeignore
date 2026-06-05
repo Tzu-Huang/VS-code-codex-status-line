@@ -1,0 +1,10 @@
+.vscode/**
+.vscode-test/**
+.codex/**
+openspec/**
+src/**
+node_modules/**
+out/test/**
+*.vsix
+tsconfig.json
+.gitignore
