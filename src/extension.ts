@@ -8,6 +8,7 @@ import {
   CodexStatusDisplayContext,
   QuotaWindowUsage,
   quotaStatusLabel,
+  quotaStatusSegments,
   statusItemStyle,
   statusLabel,
   tokenStatusLabel
@@ -22,8 +23,11 @@ import {
 } from './statusWriter';
 
 const configSection = 'codexStatusLine';
+const statusBarPriority = 100;
+const quotaSegmentItemCount = 4;
 
 let statusItem: vscode.StatusBarItem | undefined;
+let quotaSegmentItems: vscode.StatusBarItem[] = [];
 let outputChannel: vscode.OutputChannel | undefined;
 let provider: CodexStatusProvider | undefined;
 let refreshTimer: NodeJS.Timeout | undefined;
@@ -34,13 +38,24 @@ let terminalSeenAt = new Map<vscode.Terminal, number>();
 
 export function activate(context: vscode.ExtensionContext): void {
   outputChannel = vscode.window.createOutputChannel('Codex Status Line');
-  statusItem = vscode.window.createStatusBarItem('codexStatusLine.status', vscode.StatusBarAlignment.Left, 20);
+  statusItem = vscode.window.createStatusBarItem('codexStatusLine.status', vscode.StatusBarAlignment.Left, statusBarPriority);
   statusItem.name = 'Codex Status Line';
   statusItem.command = 'codexStatusLine.showDetails';
+  quotaSegmentItems = Array.from({ length: quotaSegmentItemCount }, (_, index) => {
+    const item = vscode.window.createStatusBarItem(
+      `codexStatusLine.status.segment${index}`,
+      vscode.StatusBarAlignment.Left,
+      statusBarPriority - index
+    );
+    item.name = 'Codex Status Line';
+    item.command = 'codexStatusLine.showDetails';
+    return item;
+  });
 
   context.subscriptions.push(
     outputChannel,
     statusItem,
+    ...quotaSegmentItems,
     vscode.commands.registerCommand('codexStatusLine.showDetails', showDetails),
     vscode.commands.registerCommand('codexStatusLine.openSettings', openSettings),
     vscode.commands.registerCommand('codexStatusLine.refresh', () => refreshStatus()),
@@ -86,6 +101,7 @@ function configure(): void {
 
   if (!enabled) {
     statusItem?.hide();
+    hideQuotaSegmentItems();
     return;
   }
 
@@ -96,6 +112,7 @@ function configure(): void {
     statusItem.text = statusLabel('unknown');
     statusItem.show();
   }
+  hideQuotaSegmentItems();
   void refreshStatus();
 
   const refreshIntervalMs = Math.max(500, config.get<number>('refreshIntervalMs', 2000));
@@ -116,10 +133,17 @@ async function refreshStatus(): Promise<void> {
 
   lastStatus = await getStatusForActiveTerminal();
   lastDisplayContext = await getStatusDisplayContext();
-  statusItem.text = quotaStatusLabel(lastStatus, lastDisplayContext) ?? tokenStatusLabel(lastStatus) ?? statusLabel(lastStatus.state);
+  const tooltip = buildTooltip(lastStatus, lastDisplayContext);
+  if (applyQuotaSegmentItems(lastStatus, lastDisplayContext, tooltip)) {
+    statusItem.hide();
+    return;
+  }
+
+  hideQuotaSegmentItems();
+  statusItem.text = tokenStatusLabel(lastStatus) ?? statusLabel(lastStatus.state);
   statusItem.show();
   applyStatusItemStyle(lastStatus);
-  statusItem.tooltip = buildTooltip(lastStatus, lastDisplayContext);
+  statusItem.tooltip = tooltip;
 }
 
 function buildTooltip(status: CodexStatus, displayContext: CodexStatusDisplayContext | undefined): vscode.MarkdownString {
@@ -473,6 +497,39 @@ function applyStatusItemStyle(status: CodexStatus): void {
   const style = statusItemStyle(status);
   statusItem.backgroundColor = undefined;
   statusItem.color = style.color;
+}
+
+function applyQuotaSegmentItems(
+  status: CodexStatus,
+  displayContext: CodexStatusDisplayContext | undefined,
+  tooltip: vscode.MarkdownString
+): boolean {
+  const segments = quotaStatusSegments(status, displayContext);
+  if (segments.length === 0) {
+    return false;
+  }
+
+  quotaSegmentItems.forEach((item, index) => {
+    const segment = segments[index];
+    if (!segment) {
+      item.hide();
+      return;
+    }
+
+    item.text = segment.text;
+    item.color = segment.color;
+    item.backgroundColor = undefined;
+    item.tooltip = tooltip;
+    item.show();
+  });
+
+  return true;
+}
+
+function hideQuotaSegmentItems(): void {
+  for (const item of quotaSegmentItems) {
+    item.hide();
+  }
 }
 
 function appendQuotaWindowTooltip(

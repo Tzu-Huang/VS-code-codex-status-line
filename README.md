@@ -56,10 +56,10 @@ The `state` value must be one of `idle`, `running`, `waiting`, `error`, or `unkn
 When context quota fields are present, the bottom status bar shows a compact segmented label instead of the activity state, for example:
 
 ```text
-$(folder) Status_line_extension | $(git-branch) main | $(sparkle) gpt-5.5 | C <bar> 38% | 5H <bar> 62% | W 14% <bar>
+$(sparkle) gpt-5.5 C <bar> 38% 5H <bar> 62% W <bar> 14%
 ```
 
-The visible label stays compact: token counts and quota reset hints remain available from the tooltip and details command instead of being shown directly in the status bar. The status item does not apply quota warning or error background colors.
+The visible label stays compact: folder, branch, token counts, and quota reset hints remain available from the tooltip and details command instead of being shown directly in the status bar. The status item does not apply quota warning or error background colors.
 
 These values come from the configured local status source. The extension does not query OpenAI, ChatGPT, or Codex internals for quota data.
 

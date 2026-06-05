@@ -1,5 +1,6 @@
 export const codexStates = ['idle', 'running', 'waiting', 'error', 'unknown'] as const;
-const statusSeparator = ' | ';
+const statusSeparator = ' ';
+const compactBarWidth = 4;
 
 export type CodexState = (typeof codexStates)[number];
 
@@ -242,51 +243,84 @@ export interface StatusItemStyle {
   backgroundColor?: 'warning' | 'error';
 }
 
+export type QuotaStatusCategory = 'model' | 'context' | 'fiveHour' | 'weekly';
+
+export interface QuotaStatusSegment {
+  category: QuotaStatusCategory;
+  text: string;
+  color: string;
+}
+
+const quotaCategoryColors: Record<QuotaStatusCategory, string> = {
+  model: '#38bdf8',
+  context: '#2dd4bf',
+  fiveHour: '#f472b6',
+  weekly: '#a78bfa'
+};
+
 export function quotaStatusLabel(
   status: Pick<CodexStatus, 'context' | 'limits' | 'model'>,
   displayContext: CodexStatusDisplayContext = {}
 ): string | undefined {
-  const contextPercent = status.context?.percentUsed;
-  if (contextPercent === undefined) {
+  const segments = quotaStatusSegments(status, displayContext);
+  if (segments.length === 0) {
     return undefined;
   }
 
-  const parts: string[] = [];
+  return segments.map((segment) => segment.text).join(statusSeparator);
+}
 
-  const folderName = sanitizeLabel(displayContext.folderName, 24);
-  const gitBranch = sanitizeLabel(displayContext.gitBranch, 30);
-
-  if (folderName) {
-    parts.push(`$(folder) ${folderName}`);
+export function quotaStatusSegments(
+  status: Pick<CodexStatus, 'context' | 'limits' | 'model'>,
+  displayContext: CodexStatusDisplayContext = {}
+): QuotaStatusSegment[] {
+  const contextPercent = status.context?.percentUsed;
+  if (contextPercent === undefined) {
+    return [];
   }
 
-  if (gitBranch) {
-    parts.push(`$(git-branch) ${gitBranch}`);
-  }
+  const segments: QuotaStatusSegment[] = [];
 
   if (status.model) {
-    parts.push(`$(sparkle) ${status.model}`);
+    segments.push({
+      category: 'model',
+      text: `$(sparkle) ${status.model}`,
+      color: quotaCategoryColors.model
+    });
   }
 
-  parts.push(usageSegment('C', contextPercent));
+  segments.push({
+    category: 'context',
+    text: usageSegment('C', contextPercent),
+    color: quotaCategoryColors.context
+  });
 
   if (status.limits?.fiveHour?.percentUsed !== undefined) {
-    parts.push(usageSegment('5H', status.limits.fiveHour.percentUsed));
+    segments.push({
+      category: 'fiveHour',
+      text: usageSegment('5H', status.limits.fiveHour.percentUsed),
+      color: quotaCategoryColors.fiveHour
+    });
   }
 
   if (status.limits?.weekly?.percentUsed !== undefined) {
-    parts.push(weeklyUsageSegment(status.limits.weekly.percentUsed));
+    segments.push({
+      category: 'weekly',
+      text: weeklyUsageSegment(status.limits.weekly.percentUsed),
+      color: quotaCategoryColors.weekly
+    });
   }
 
-  return parts.join(statusSeparator);
+  return segments;
 }
 
 export function statusItemStyle(status: Pick<CodexStatus, 'context'>): StatusItemStyle {
-  if (status.context?.percentUsed === undefined) {
+  const percentUsed = status.context?.percentUsed;
+  if (percentUsed === undefined) {
     return {};
   }
 
-  return { color: '#7dd3fc' };
+  return { color: quotaCategoryColors.context };
 }
 
 export function progressBar(percent: number, width = 12): string {
@@ -298,12 +332,12 @@ export function progressBar(percent: number, width = 12): string {
 
 function usageSegment(label: string, percent: number): string {
   const normalized = normalizePercent(percent) ?? 0;
-  return `${label} ${progressBar(normalized, 8)} ${normalized}%`;
+  return `${label} ${progressBar(normalized, compactBarWidth)} ${normalized}%`;
 }
 
 function weeklyUsageSegment(percent: number): string {
   const normalized = normalizePercent(percent) ?? 0;
-  return `W ${normalized}% ${progressBar(normalized, 8)}`;
+  return `W ${progressBar(normalized, compactBarWidth)} ${normalized}%`;
 }
 
 export function statusLabel(state: CodexState): string {
