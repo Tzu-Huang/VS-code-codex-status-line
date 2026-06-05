@@ -9,6 +9,7 @@ import {
   normalizeState,
   progressBar,
   quotaStatusLabel,
+  quotaStatusSegments,
   sanitizeDetail,
   statusItemStyle,
   statusLabel,
@@ -72,7 +73,44 @@ describe('status labels', () => {
         folderName: 'Status_line_extension',
         gitBranch: 'main'
       }),
-      `$(folder) Status_line_extension | $(git-branch) main | $(sparkle) gpt-5.5 | C ${'\u2588'.repeat(3)}${'\u2591'.repeat(5)} 38% | 5H ${'\u2588'.repeat(5)}${'\u2591'.repeat(3)} 62% | W 14% ${'\u2588'.repeat(1)}${'\u2591'.repeat(7)}`
+      `$(sparkle) gpt-5.5 C ${'\u2588'.repeat(2)}${'\u2591'.repeat(2)} 38% 5H ${'\u2588'.repeat(2)}${'\u2591'.repeat(2)} 62% W ${'\u2588'.repeat(1)}${'\u2591'.repeat(3)} 14%`
+    );
+  });
+
+  it('returns category-colored quota status segments', () => {
+    assert.deepEqual(
+      quotaStatusSegments({
+        model: 'gpt-5.5',
+        context: {
+          percentUsed: 38
+        },
+        limits: {
+          fiveHour: { percentUsed: 62 },
+          weekly: { percentUsed: 14 }
+        }
+      }),
+      [
+        {
+          category: 'model',
+          text: '$(sparkle) gpt-5.5',
+          color: '#38bdf8'
+        },
+        {
+          category: 'context',
+          text: `C ${'\u2588'.repeat(2)}${'\u2591'.repeat(2)} 38%`,
+          color: '#2dd4bf'
+        },
+        {
+          category: 'fiveHour',
+          text: `5H ${'\u2588'.repeat(2)}${'\u2591'.repeat(2)} 62%`,
+          color: '#f472b6'
+        },
+        {
+          category: 'weekly',
+          text: `W ${'\u2588'.repeat(1)}${'\u2591'.repeat(3)} 14%`,
+          color: '#a78bfa'
+        }
+      ]
     );
   });
 
@@ -83,7 +121,7 @@ describe('status labels', () => {
           percentUsed: 50
         }
       }),
-      `C ${'\u2588'.repeat(4)}${'\u2591'.repeat(4)} 50%`
+      `C ${'\u2588'.repeat(2)}${'\u2591'.repeat(2)} 50%`
     );
     assert.equal(quotaStatusLabel({ context: undefined, limits: undefined }), undefined);
   });
@@ -107,9 +145,9 @@ describe('status labels', () => {
     assert.equal(label?.includes('2h 10m'), false);
   });
 
-  it('does not request warning or error backgrounds for high context usage', () => {
-    assert.deepEqual(statusItemStyle({ context: { percentUsed: 90 } }), { color: '#7dd3fc' });
-    assert.deepEqual(statusItemStyle({ context: { percentUsed: 80 } }), { color: '#7dd3fc' });
+  it('uses the context category color without warning or error backgrounds', () => {
+    assert.deepEqual(statusItemStyle({ context: { percentUsed: 10 } }), { color: '#2dd4bf' });
+    assert.deepEqual(statusItemStyle({ context: { percentUsed: 95 } }), { color: '#2dd4bf' });
     assert.deepEqual(statusItemStyle({ context: undefined }), {});
   });
 });
