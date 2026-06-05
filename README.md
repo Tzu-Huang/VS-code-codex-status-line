@@ -4,7 +4,7 @@ Unofficial VS Code extension that shows local Codex activity in the status bar.
 
 This extension is not affiliated with, endorsed by, or sponsored by OpenAI, Anthropic, Microsoft, Claude, or Claude Code.
 
-![Codex Status Line status bar screenshot](./Screenshot%202026-06-05%20105841.png)
+![Codex Status Line status bar screenshot](./2.0.png)
 
 ## Features
 
