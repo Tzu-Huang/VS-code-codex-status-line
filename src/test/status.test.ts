@@ -66,14 +66,14 @@ describe('status labels', () => {
           tokensRemaining: 12345
         },
         limits: {
-          fiveHour: { percentUsed: 62 },
-          weekly: { percentUsed: 14 }
+          fiveHour: { percentUsed: 62, resetsIn: '2h 10m' },
+          weekly: { percentUsed: 14, resetsIn: '3d' }
         }
       }, {
         folderName: 'Status_line_extension',
         gitBranch: 'main'
       }),
-      `$(sparkle) gpt-5.5 C ${'\u2588'.repeat(2)}${'\u2591'.repeat(2)} 38% 5H ${'\u2588'.repeat(2)}${'\u2591'.repeat(2)} 62% W ${'\u2588'.repeat(1)}${'\u2591'.repeat(3)} 14%`
+      `$(sparkle) gpt-5.5 C ${'\u2588'.repeat(2)}${'\u2591'.repeat(2)} 38% 5H ${'\u2588'.repeat(2)}${'\u2591'.repeat(2)} 62% (reset in 2h 10m) W ${'\u2588'.repeat(1)}${'\u2591'.repeat(3)} 14% (reset in 3d)`
     );
   });
 
@@ -85,8 +85,8 @@ describe('status labels', () => {
           percentUsed: 38
         },
         limits: {
-          fiveHour: { percentUsed: 62 },
-          weekly: { percentUsed: 14 }
+          fiveHour: { percentUsed: 62, resetsIn: '2h 10m' },
+          weekly: { percentUsed: 14, resetsIn: '3d' }
         }
       }),
       [
@@ -106,9 +106,19 @@ describe('status labels', () => {
           color: '#f472b6'
         },
         {
+          category: 'fiveHour',
+          text: '(reset in 2h 10m)',
+          color: '#64748b'
+        },
+        {
           category: 'weekly',
           text: `W ${'\u2588'.repeat(1)}${'\u2591'.repeat(3)} 14%`,
           color: '#a78bfa'
+        },
+        {
+          category: 'weekly',
+          text: '(reset in 3d)',
+          color: '#64748b'
         }
       ]
     );
@@ -126,7 +136,7 @@ describe('status labels', () => {
     assert.equal(quotaStatusLabel({ context: undefined, limits: undefined }), undefined);
   });
 
-  it('keeps detailed quota text out of the visible quota label', () => {
+  it('includes reset hints in the visible quota label without adding token details', () => {
     const label = quotaStatusLabel({
       model: 'gpt-5.5',
       context: {
@@ -142,7 +152,7 @@ describe('status labels', () => {
     });
 
     assert.equal(label?.includes('left'), false);
-    assert.equal(label?.includes('2h 10m'), false);
+    assert.equal(label?.includes('(reset in 2h 10m)'), true);
   });
 
   it('uses the context category color without warning or error backgrounds', () => {

@@ -56,10 +56,10 @@ The `state` value must be one of `idle`, `running`, `waiting`, `error`, or `unkn
 When context quota fields are present, the bottom status bar shows a compact segmented label instead of the activity state, for example:
 
 ```text
-$(sparkle) gpt-5.5 C <bar> 38% 5H <bar> 62% W <bar> 14%
+$(sparkle) gpt-5.5 C <bar> 38% 5H <bar> 62% (reset in 2h 10m) W <bar> 14% (reset in 3d)
 ```
 
-The visible label stays compact: folder, branch, token counts, and quota reset hints remain available from the tooltip and details command instead of being shown directly in the status bar. The status item does not apply quota warning or error background colors.
+The visible label stays compact: folder, branch, token counts, and other quota details remain available from the tooltip and details command instead of being shown directly in the status bar. Reset hints, when present, are shown inline in a muted color after the 5-hour and weekly percentage bars. The status item does not apply quota warning or error background colors.
 
 These values come from the configured local status source. The extension does not query OpenAI, ChatGPT, or Codex internals for quota data.
 
@@ -138,5 +138,5 @@ npm run package
 Install the generated VSIX:
 
 ```powershell
-code --install-extension .\codex-status-line-0.0.6.vsix
+code --install-extension .\codex-status-line-2.0.0.vsix
 ```

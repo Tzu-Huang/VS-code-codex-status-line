@@ -24,7 +24,7 @@ import {
 
 const configSection = 'codexStatusLine';
 const statusBarPriority = 100;
-const quotaSegmentItemCount = 4;
+const quotaSegmentItemCount = 6;
 
 let statusItem: vscode.StatusBarItem | undefined;
 let quotaSegmentItems: vscode.StatusBarItem[] = [];

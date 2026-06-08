@@ -1,6 +1,9 @@
 export const codexStates = ['idle', 'running', 'waiting', 'error', 'unknown'] as const;
 const statusSeparator = ' ';
 const compactBarWidth = 4;
+const mutedQuotaTextColor = '#64748b';
+const minutesPerHour = 60;
+const minutesPerDay = minutesPerHour * 24;
 
 export type CodexState = (typeof codexStates)[number];
 
@@ -274,6 +277,7 @@ export function quotaStatusSegments(
   status: Pick<CodexStatus, 'context' | 'limits' | 'model'>,
   displayContext: CodexStatusDisplayContext = {}
 ): QuotaStatusSegment[] {
+  const now = new Date();
   const contextPercent = status.context?.percentUsed;
   if (contextPercent === undefined) {
     return [];
@@ -301,6 +305,23 @@ export function quotaStatusSegments(
       text: usageSegment('5H', status.limits.fiveHour.percentUsed),
       color: quotaCategoryColors.fiveHour
     });
+
+    if (status.limits.fiveHour.resetsIn) {
+      segments.push({
+        category: 'fiveHour',
+        text: resetHintSegment(status.limits.fiveHour.resetsIn),
+        color: mutedQuotaTextColor
+      });
+    } else if (status.limits.fiveHour.resetsAt) {
+      const resetHint = resetHintSegmentFromDate(status.limits.fiveHour.resetsAt, now);
+      if (resetHint) {
+        segments.push({
+          category: 'fiveHour',
+          text: resetHint,
+          color: mutedQuotaTextColor
+        });
+      }
+    }
   }
 
   if (status.limits?.weekly?.percentUsed !== undefined) {
@@ -309,6 +330,23 @@ export function quotaStatusSegments(
       text: weeklyUsageSegment(status.limits.weekly.percentUsed),
       color: quotaCategoryColors.weekly
     });
+
+    if (status.limits.weekly.resetsIn) {
+      segments.push({
+        category: 'weekly',
+        text: resetHintSegment(status.limits.weekly.resetsIn),
+        color: mutedQuotaTextColor
+      });
+    } else if (status.limits.weekly.resetsAt) {
+      const resetHint = resetHintSegmentFromDate(status.limits.weekly.resetsAt, now);
+      if (resetHint) {
+        segments.push({
+          category: 'weekly',
+          text: resetHint,
+          color: mutedQuotaTextColor
+        });
+      }
+    }
   }
 
   return segments;
@@ -338,6 +376,44 @@ function usageSegment(label: string, percent: number): string {
 function weeklyUsageSegment(percent: number): string {
   const normalized = normalizePercent(percent) ?? 0;
   return `W ${progressBar(normalized, compactBarWidth)} ${normalized}%`;
+}
+
+function resetHintSegment(resetsIn: string): string {
+  return `(reset in ${resetsIn})`;
+}
+
+function resetHintSegmentFromDate(resetsAt: string, referenceTime: Date): string | undefined {
+  const resetAtMs = Date.parse(resetsAt);
+  if (!Number.isFinite(resetAtMs)) {
+    return undefined;
+  }
+
+  const remainingMs = resetAtMs - referenceTime.getTime();
+  if (remainingMs <= 0) {
+    return undefined;
+  }
+
+  const totalMinutes = Math.max(1, Math.round(remainingMs / 60000));
+  return `(reset in ${formatDurationMinutes(totalMinutes)})`;
+}
+
+function formatDurationMinutes(totalMinutes: number): string {
+  const days = Math.floor(totalMinutes / minutesPerDay);
+  const hours = Math.floor((totalMinutes % minutesPerDay) / minutesPerHour);
+  const minutes = totalMinutes % minutesPerHour;
+  const parts: string[] = [];
+
+  if (days > 0) {
+    parts.push(`${days}d`);
+  }
+  if (hours > 0) {
+    parts.push(`${hours}h`);
+  }
+  if (minutes > 0 || parts.length === 0) {
+    parts.push(`${minutes}m`);
+  }
+
+  return parts.slice(0, 2).join(' ');
 }
 
 export function statusLabel(state: CodexState): string {
